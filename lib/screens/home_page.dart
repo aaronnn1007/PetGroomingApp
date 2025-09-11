@@ -2,6 +2,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pet_grooming_app/screens/profile_page.dart';
+import 'our_services_page.dart'; 
+import 'about_us_page.dart'; 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -16,7 +20,6 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    // Listen to authentication state changes
     _authSubscription = FirebaseAuth.instance.authStateChanges().listen((user) {
       setState(() {
         _user = user;
@@ -26,23 +29,22 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    // Cancel the subscription when the widget is disposed
     _authSubscription.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // A simple check for screen size to adjust layout
-    final isDesktop = MediaQuery.of(context).size.width > 800;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth > 800;
 
     return Scaffold(
       backgroundColor: Colors.white,
-      // Using a custom app bar implementation in the body for more control
+      drawer: !isDesktop ? _buildNavDrawer(context) : null,
       body: SafeArea(
         child: Column(
           children: [
-            _buildCustomAppBar(context),
+            _buildCustomAppBar(context, isDesktop),
             Expanded(
               child: SingleChildScrollView(
                 child: Padding(
@@ -50,21 +52,20 @@ class _HomePageState extends State<HomePage> {
                     horizontal: isDesktop ? 80.0 : 24.0,
                     vertical: 40.0,
                   ),
-                  // Use Row for desktop and Column for mobile
                   child: isDesktop
                       ? Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Expanded(flex: 3, child: _buildLeftPanel()),
+                            Expanded(flex: 3, child: _buildLeftPanel(isDesktop)),
                             const SizedBox(width: 60),
-                            Expanded(flex: 2, child: _buildRightPanel()),
+                            Expanded(flex: 2, child: _buildRightPanel(isDesktop)),
                           ],
                         )
                       : Column(
                           children: [
-                            _buildLeftPanel(),
-                            const SizedBox(height: 40),
-                            _buildRightPanel(),
+                            _buildLeftPanel(isDesktop),
+                            const SizedBox(height: 60),
+                            _buildRightPanel(isDesktop),
                           ],
                         ),
                 ),
@@ -76,259 +77,287 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // --- WIDGETS ---
-  void _showComingSoonSnackBar(BuildContext context, String featureName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('$featureName feature is coming soon!'),
-        backgroundColor: Colors.amber[800],
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin: const EdgeInsets.all(10),
-      ),
+  // --- NAVIGATION LOGIC ---
+
+  void _navigateToHome(BuildContext context) {
+    // If we are already on the home page, do nothing.
+    // If not, pop until we are back at the initial route.
+    if (ModalRoute.of(context)?.isFirst == false) {
+      Navigator.of(context).popUntil((route) => route.isFirst);
+    }
+  }
+
+  void _navigateToOurServices(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const OurServicesPage()),
     );
   }
 
-  // Custom App Bar with dynamic Login/Account functionality
-  Widget _buildCustomAppBar(BuildContext context) {
+  void _navigateToAboutUs(BuildContext context) {
+     Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const AboutUsPage()),
+    );
+  }
+
+
+  // --- WIDGETS ---
+
+  Widget _buildCustomAppBar(BuildContext context, bool isDesktop) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            children: [
-              const Icon(Icons.menu, size: 28),
-              const SizedBox(width: 16),
-              RichText(
-                text:TextSpan(
-                  children: [
-                    TextSpan(
-                      text: "Glowing",
-                      style: GoogleFonts.dynaPuff(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.amber[400],
-                      ),
-                    ),
-                    TextSpan(
-                      text: " pet ✨",
-                      style: GoogleFonts.dynaPuff(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black, // Black
-                      ),
-                    ),
-                  ],
+          if (!isDesktop)
+            Builder(
+              builder: (context) => IconButton(
+                icon: const Icon(Icons.menu, size: 28),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
+          if (isDesktop) const SizedBox(width: 16),
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: "Glowing",
+                  style: GoogleFonts.dynaPuff(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.amber[400],
+                  ),
                 ),
+                TextSpan(
+                  text: " pet ✨",
+                  style: GoogleFonts.dynaPuff(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.black,
+                  ),
                 ),
-            ],
+              ],
+            ),
           ),
-          // For larger screens, show navigation links
-          if (MediaQuery.of(context).size.width > 1000)
-            Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  SizedBox(width: 150),
-                  _navLink(context, 'Pet Clinic', () => _showComingSoonSnackBar(context, 'Pet Clinic')),
-                  _navLink(context, 'Pet Hotels', () => _showComingSoonSnackBar(context, 'Pet Hotels')),
-                  _navLink(context, 'Pet Grooming', () => _showComingSoonSnackBar(context, 'Pet Grooming')),
-                  _navLink(context, 'Pet Training', () => _showComingSoonSnackBar(context, 'Pet Training')),
-                ],
-              ),
-            ),
-          // Conditional Login Button or Account Icon
-          if (_user == null)
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.amber[400]!, Colors.orange[400]!],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: Offset(0, 4),
-                ),
+          Expanded(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                if (isDesktop)
+                  Row(
+                    children: [
+                      _navLink(context, 'Home', () => _navigateToHome(context)),
+                      _navLink(context, 'Our Services', () => _navigateToOurServices(context)),
+                      _navLink(context, 'About Us', () => _navigateToAboutUs(context)),
+                      const SizedBox(width: 20),
+                    ],
+                  ),
+                if (_user == null)
+                  _buildLoginButton(isDesktop)
+                else
+                  _buildAccountMenu(),
               ],
             ),
-            child: ElevatedButton.icon(
-              onPressed: () => Navigator.pushNamed(context, '/login'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.transparent,
-                shadowColor: Colors.transparent,
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-              ),
-              icon: const Icon(Icons.login, color: Colors.white),
-              label: Text(
-                'Login',
-                style: GoogleFonts.dynaPuff(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: 1.2,
-                ),
-              ),
-            ),
-          )
-          else
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'logout') {
-                  FirebaseAuth.instance.signOut();
-                }
-                // You can add more options like 'profile' here
-              },
-              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                const PopupMenuItem<String>(
-                  value: 'logout',
-                  child: Text('Sign Out'),
-                ),
-              ],
-              icon: const Icon(Icons.account_circle, size: 32, color: Colors.black87),
-            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildNavDrawer(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+           DrawerHeader(
+            decoration: BoxDecoration(color: Colors.amber[400]),
+            child: Text('Glowing Pet', style: GoogleFonts.dynaPuff(fontSize: 24, color: Colors.white)),
+          ),
+          ListTile(
+            leading: const Icon(Icons.home),
+            title: const Text('Home'),
+            onTap: () {
+              Navigator.pop(context); // Close the drawer
+              _navigateToHome(context);
+            },
+          ),
+           ListTile(
+            leading: const Icon(Icons.pets),
+            title: const Text('Our Services'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToOurServices(context);
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('About Us'),
+            onTap: () {
+              Navigator.pop(context);
+              _navigateToAboutUs(context);
+            },
+          ),
         ],
       ),
     );
   }
 
-  // Navigation Link Helper
-Widget _navLink(BuildContext context, String title, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8), // for a circular ripple effect
-      hoverColor: Colors.amber.withOpacity(0.12),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-        child: Text(
-          title,
-          style: GoogleFonts.jua(
-            fontSize: 16,
+  Widget _buildLoginButton(bool isDesktop) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.amber[400]!, Colors.orange[400]!],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.amber.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => Navigator.pushNamed(context, '/login'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          padding: EdgeInsets.symmetric(horizontal: isDesktop ? 28 : 18, vertical: isDesktop ? 14 : 12),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        ),
+        icon: const Icon(Icons.login, color: Colors.white, size: 20),
+        label: Text(
+          'Login',
+          style: GoogleFonts.dynaPuff(
+            fontSize: isDesktop ? 18 : 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
       ),
     );
   }
 
-  // Left panel with the cat image and callouts
-  Widget _buildLeftPanel() {
+  Widget _buildAccountMenu() {
+  return PopupMenuButton<String>(
+    onSelected: (value) {
+      if (value == 'logout') {
+        FirebaseAuth.instance.signOut();
+      } else if (value == 'profile') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+      }
+    },
+    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+      const PopupMenuItem<String>(
+        value: 'profile',
+        child: Text('Profile'),
+      ),
+    ],
+    icon: Icon(Icons.account_circle, size: 32, color: Colors.amber[400]),
+  );
+}
+
+  Widget _navLink(BuildContext context, String title, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      hoverColor: Colors.amber.withOpacity(0.12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+        child: Text(title, style: GoogleFonts.jua(fontSize: 16)),
+      ),
+    );
+  }
+
+  Widget _buildLeftPanel(bool isDesktop) {
     return Stack(
-      clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        // Yellow circle background
         Container(
-          width: 400,
-          height: 400,
+          width: isDesktop ? 400 : 300,
+          height: isDesktop ? 400 : 300,
           decoration: BoxDecoration(
             color: Colors.amber[400],
             shape: BoxShape.circle,
           ),
         ),
-        // Cat image
-        Positioned(
-          bottom: 0,
-          child: SizedBox(
-            height: 450,
-            // Replace with your actual cat image asset
-            child: Image.network(
-              'assets/Be.png',
-              fit: BoxFit.contain,
-              errorBuilder: (context, error, stackTrace) =>
-                  const Icon(Icons.pets, size: 200, color: Colors.grey),
+        SizedBox(
+          height: isDesktop ? 450 : 350,
+          child: Image.asset( // Changed to AssetImage
+            'assets/Be.png', 
+            fit: BoxFit.contain,
+            errorBuilder: (context, error, stackTrace) =>
+                const Icon(Icons.pets, size: 200, color: Colors.grey),
+          ),
+        ),
+        if (isDesktop) ...[
+          Positioned(
+            bottom: 50,
+            left: -30,
+            child: _buildInfoCard(
+              icon: Icons.local_hospital,
+              title: 'Pet Clinic',
             ),
           ),
-        ),
-        // Pet Clinic Callout
-        Positioned(
-          bottom: 50,
-          left: -30,
-          child: _buildInfoCard(
-            icon: Icons.local_hospital,
-            title: 'Pet Clinic',
-            subtitle: 'Give extra attention to your child, before it\'s too late',
+          Positioned(
+            top: 125,
+            right: -30,
+            child: _buildInfoCard(
+              icon: Icons.cut,
+              title: 'Pet Grooming',
+            ),
           ),
-        ),
-        // Pet Grooming Callout
-        Positioned(
-          top: 125,
-          right: -30,
-          child: _buildInfoCard(
-            // Using a placeholder icon here
-            icon: Icons.cut,
-            title: 'Pet Grooming',
-            subtitle: 'can be called at home or come to our pet shop',
-          ),
-        ),
+        ],
       ],
     );
   }
 
-  // Right panel with text and button
-  Widget _buildRightPanel() {
+  Widget _buildRightPanel(bool isDesktop) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: isDesktop ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(
           'Be Glowing\nBe Cute ✨',
+          textAlign: isDesktop ? TextAlign.start : TextAlign.center,
           style: GoogleFonts.dynaPuff(
-            fontSize: 48,
+            fontSize: isDesktop ? 48 : 36,
             fontWeight: FontWeight.w600,
             height: 1.3,
             color: Colors.amber[400],
           ),
         ),
         const SizedBox(height: 24),
-        const Text(
-          'Welcome to Glowing Pet, where grooming meets care and compassion. Treat your furry friends to top-notch pampering from our experienced team. Discover why we\'re more than just grooming—we\'re family.',
+        Text(
+          'Welcome to Glowing Pet, where grooming meets care and compassion. Treat your furry friends to top-notch pampering from our experienced team.',
+          textAlign: isDesktop ? TextAlign.start : TextAlign.center,
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isDesktop ? 16 : 14,
             color: Colors.black54,
             height: 1.5,
           ),
         ),
         const SizedBox(height: 32),
-        // Learn More Button with Gradient
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.amber[400]!, Colors.amber[600]!],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight,
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withOpacity(0.5),
-                blurRadius: 10,
-                offset: const Offset(0, 5),
-              ),
-            ],
+        ElevatedButton(
+          onPressed: () => _navigateToOurServices(context),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.amber[500],
+            padding: EdgeInsets.symmetric(horizontal: isDesktop ? 40 : 30, vertical: isDesktop ? 20 : 15),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+            elevation: 8,
+            shadowColor: Colors.amber.withOpacity(0.5),
           ),
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.transparent,
-              shadowColor: Colors.transparent,
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
-            ),
-            child: Text(
-              'LEARN MORE',
-              style: GoogleFonts.dynaPuff(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: const Color.fromARGB(255, 255, 255, 255),
-              ),
+          child: Text(
+            'Learn More',
+            style: GoogleFonts.dynaPuff(
+              fontSize: isDesktop ? 16 : 14,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
         ),
@@ -336,14 +365,10 @@ Widget _navLink(BuildContext context, String title, VoidCallback onTap) {
     );
   }
 
-  // Reusable card widget for the callouts
-  Widget _buildInfoCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-  }) {
+  Widget _buildInfoCard({ required IconData icon, required String title,}) {
     return Container(
       padding: const EdgeInsets.all(16),
+      width: 200,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -362,26 +387,12 @@ Widget _navLink(BuildContext context, String title, VoidCallback onTap) {
             child: Icon(icon, color: Colors.black),
           ),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 4),
-              SizedBox(
-                width: 150, // Constrain width to allow text wrapping
-                child: Text(
-                  subtitle,
-                  style: const TextStyle(fontSize: 12, color: Colors.black54),
-                ),
-              ),
-            ],
-          )
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
         ],
       ),
     );
   }
 }
-
