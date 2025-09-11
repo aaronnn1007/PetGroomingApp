@@ -35,15 +35,15 @@ class DefaultFirebaseOptions {
         );
     }
   }
-
+// You will get all the required IDs from your project settings in Firebase
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBuTEWnCQ6VLoSjW1-c0cIriD2EuTVrwZ4',
-    appId: '1:1059930807107:web:2de02e607d026301146df6',
-    messagingSenderId: '1059930807107',
-    projectId: 'pet-grooming-app-8dc25',
-    authDomain: 'pet-grooming-app-8dc25.firebaseapp.com',
-    storageBucket: 'pet-grooming-app-8dc25.firebasestorage.app',
-    measurementId: 'G-P3D7N7FC71',
+    apiKey: 'Your API',//update here
+    appId: 'App id',//update here
+    messagingSenderId: 'id', //update here
+    projectId: 'id', //update here
+    authDomain: 'id', //update here
+    storageBucket: '***',//update here
+    measurementId: 'id',//update here
   );
 
   static const FirebaseOptions android = FirebaseOptions(
